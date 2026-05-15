@@ -19,6 +19,7 @@ class CreateCommandScreen extends StatefulWidget {
 
 class _CreateCommandScreenState extends State<CreateCommandScreen> {
   final _triggerController = TextEditingController();
+  final _ytHandleController = TextEditingController();
   final _radioService = RadioService();
   ActionType _actionType = ActionType.radio;
   Map<String, dynamic>? _selectedStation;
@@ -33,12 +34,17 @@ class _CreateCommandScreenState extends State<CreateCommandScreen> {
       _triggerController.text = widget.existing!.triggerPhrase;
       _actionType = widget.existing!.actionType;
       _selectedStation = Map.from(widget.existing!.actionParams);
+      if (_actionType == ActionType.ytHandleLive) {
+        _ytHandleController.text =
+            widget.existing!.actionParams['handle'] as String? ?? '';
+      }
     }
   }
 
   @override
   void dispose() {
     _triggerController.dispose();
+    _ytHandleController.dispose();
     _radioService.dispose();
     super.dispose();
   }
@@ -53,27 +59,49 @@ class _CreateCommandScreenState extends State<CreateCommandScreen> {
     });
   }
 
-  Future<void> _save() async {
-    final phrase = _triggerController.text.trim();
-    if (phrase.isEmpty) return;
-    if (_selectedStation == null) return;
+  bool _validate() {
+    if (_triggerController.text.trim().isEmpty) {
+      return false;
+    }
+    if (_actionType == ActionType.radio && _selectedStation == null) {
+      return false;
+    }
+    if (_actionType == ActionType.ytHandleLive &&
+        _ytHandleController.text.trim().isEmpty) {
+      return false;
+    }
+    return true;
+  }
 
-    final cmd = Command(
-      triggerPhrase: phrase,
-      actionType: _actionType,
-      actionParams: _selectedStation!,
-    );
+  Future<void> _save() async {
+    if (!_validate()) return;
+
+    final phrase = _triggerController.text.trim();
+    Map<String, dynamic> params;
+
+    if (_actionType == ActionType.radio) {
+      params = _selectedStation!;
+    } else {
+      final handle = _ytHandleController.text.trim();
+      params = {
+        'handle': handle.startsWith('@') ? handle : '@$handle',
+      };
+    }
 
     if (widget.existing != null) {
       await widget.commandService.update(
         widget.existing!.copyWith(
           triggerPhrase: phrase,
           actionType: _actionType,
-          actionParams: _selectedStation!,
+          actionParams: params,
         ),
       );
     } else {
-      await widget.commandService.add(cmd);
+      await widget.commandService.add(Command(
+        triggerPhrase: phrase,
+        actionType: _actionType,
+        actionParams: params,
+      ));
     }
     if (mounted) Navigator.pop(context);
   }
@@ -81,7 +109,8 @@ class _CreateCommandScreenState extends State<CreateCommandScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.existing != null ? 'Edit Command' : 'New Command')),
+      appBar:
+          AppBar(title: Text(widget.existing != null ? 'Edit Command' : 'New Command')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -104,6 +133,10 @@ class _CreateCommandScreenState extends State<CreateCommandScreen> {
               DropdownMenuItem(
                 value: ActionType.radio,
                 child: Text('Radio'),
+              ),
+              DropdownMenuItem(
+                value: ActionType.ytHandleLive,
+                child: Text('YT Handle Live'),
               ),
             ],
             onChanged: (v) {
@@ -152,15 +185,15 @@ class _CreateCommandScreenState extends State<CreateCommandScreen> {
                 color: Colors.green.shade50,
                 child: ListTile(
                   leading: const Icon(Icons.check_circle, color: Colors.green),
-                  title: Text(_selectedStation!['name'] ?? ''),
+                  title: Text(_selectedStation!['stationName'] ?? ''),
                   subtitle: Text(_selectedStation!['country'] ?? ''),
                 ),
               ),
             ...ListTile.divideTiles(
               color: Colors.grey.shade300,
               tiles: _searchResults
-                  .where((s) =>
-                      s['name'] != _selectedStation?['name'])
+                  .where(
+                      (s) => s['name'] != _selectedStation?['stationName'])
                   .map((s) => ListTile(
                         dense: true,
                         title: Text(s['name'] ?? 'Unknown'),
@@ -176,7 +209,9 @@ class _CreateCommandScreenState extends State<CreateCommandScreen> {
                           setState(() {
                             _selectedStation = {
                               'stationName': s['name'] ?? '',
-                              'streamUrl': s['url_resolved'] ?? s['url'] ?? '',
+                              'streamUrl': s['url_resolved'] ??
+                                  s['url'] ??
+                                  '',
                               'country': s['country'] ?? '',
                               'tags': s['tags'] ?? '',
                             };
@@ -184,6 +219,24 @@ class _CreateCommandScreenState extends State<CreateCommandScreen> {
                           });
                         },
                       )),
+            ),
+          ],
+          if (_actionType == ActionType.ytHandleLive) ...[
+            const Text('YouTube Handle',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _ytHandleController,
+              decoration: const InputDecoration(
+                hintText: 'e.g. @BBCNews or just BBCNews',
+                border: OutlineInputBorder(),
+                prefixText: 'youtube.com/',
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'The app will look for the /live stream of this channel.',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
           ],
           const SizedBox(height: 32),

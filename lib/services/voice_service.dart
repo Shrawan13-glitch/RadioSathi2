@@ -3,12 +3,14 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../models/command.dart';
 import 'command_service.dart';
 import 'radio_service.dart';
+import 'youtube_service.dart';
 
 class VoiceService {
   final stt.SpeechToText speech;
   final FlutterTts tts;
   final CommandService commandService;
   final RadioService radioService;
+  final YoutubeService youtubeService;
   bool _isListening = false;
   bool _initialized = false;
 
@@ -17,6 +19,7 @@ class VoiceService {
     required this.tts,
     required this.commandService,
     required this.radioService,
+    required this.youtubeService,
   });
 
   bool get isListening => _isListening;
@@ -100,6 +103,27 @@ class VoiceService {
         } else {
           say('No stream URL configured');
         }
+      case ActionType.ytHandleLive:
+        _resolveYtLive(cmd);
     }
+  }
+
+  Future<void> _resolveYtLive(Command cmd) async {
+    final handle = cmd.actionParams['handle'] as String?;
+    if (handle == null || handle.isEmpty) {
+      say('No YouTube handle configured');
+      return;
+    }
+
+    say('Looking up $handle');
+    final result = await youtubeService.resolveLiveStream(handle);
+    if (result == null || (result['streamUrl'] ?? '').isEmpty) {
+      say('Could not find live stream');
+      return;
+    }
+
+    final name = result['title'] ?? handle;
+    radioService.play(result['streamUrl']!, stationName: name);
+    say('Playing $name');
   }
 }

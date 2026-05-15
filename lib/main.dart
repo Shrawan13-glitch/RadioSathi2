@@ -5,6 +5,7 @@ import 'services/command_service.dart';
 import 'services/radio_service.dart';
 import 'services/voice_service.dart';
 import 'services/theme_service.dart';
+import 'services/youtube_service.dart';
 import 'screens/home_screen.dart';
 
 void main() {
@@ -23,11 +24,13 @@ class _MyAppState extends State<MyApp> {
   final themeService = ThemeService();
   final commandService = CommandService();
   final radioService = RadioService();
+  final youtubeService = YoutubeService();
   late final voiceService = VoiceService(
     speech: stt.SpeechToText(),
     tts: FlutterTts(),
     commandService: commandService,
     radioService: radioService,
+    youtubeService: youtubeService,
   );
 
   @override

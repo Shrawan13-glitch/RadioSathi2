@@ -45,12 +45,19 @@ class _CommandsScreenState extends State<CommandsScreen> {
                     leading: Icon(
                       cmd.actionType == ActionType.radio
                           ? Icons.radio
-                          : Icons.question_mark,
+                          : cmd.actionType == ActionType.ytHandleLive
+                              ? Icons.play_circle
+                              : Icons.question_mark,
                       color: cmd.enabled ? null : Colors.grey,
                     ),
                     title: Text(cmd.triggerPhrase),
                     subtitle: Text(
-                        '${cmd.actionType.name} — ${cmd.actionParams['stationName'] ?? ''}'),
+                      cmd.actionType == ActionType.radio
+                          ? 'Radio — ${cmd.actionParams['stationName'] ?? ''}'
+                          : cmd.actionType == ActionType.ytHandleLive
+                              ? 'YT Live — ${cmd.actionParams['handle'] ?? ''}'
+                              : '',
+                    ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [

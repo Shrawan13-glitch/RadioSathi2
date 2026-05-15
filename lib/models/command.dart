@@ -2,7 +2,7 @@ import 'package:uuid/uuid.dart';
 
 const _uuid = Uuid();
 
-enum ActionType { radio }
+enum ActionType { radio, ytHandleLive }
 
 class Command {
   final String id;
