@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/voice_service.dart';
 import '../services/command_service.dart';
 import '../services/radio_service.dart';
+import '../services/theme_service.dart';
 import 'commands_screen.dart';
 import 'settings_screen.dart';
 
@@ -9,12 +10,14 @@ class HomeScreen extends StatefulWidget {
   final VoiceService voiceService;
   final CommandService commandService;
   final RadioService radioService;
+  final ThemeService themeService;
 
   const HomeScreen({
     super.key,
     required this.voiceService,
     required this.commandService,
     required this.radioService,
+    required this.themeService,
   });
 
   @override
@@ -29,7 +32,12 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    widget.radioService.addListener(_onRadioChanged);
     _init();
+  }
+
+  void _onRadioChanged() {
+    setState(() {});
   }
 
   Future<void> _init() async {
@@ -53,12 +61,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    widget.radioService.removeListener(_onRadioChanged);
     widget.voiceService.stopListening();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final isPlaying = widget.radioService.isPlaying;
+    final stationName = widget.radioService.currentStationName;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -81,7 +93,9 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => const SettingsScreen(),
+                builder: (_) => SettingsScreen(
+                      themeService: widget.themeService,
+                    ),
               ),
             ),
           ),
@@ -165,6 +179,47 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
+      bottomSheet: isPlaying
+          ? Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.green.shade700,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.radio, color: Colors.white, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      stationName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : null,
     );
   }
 }

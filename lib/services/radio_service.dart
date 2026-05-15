@@ -1,12 +1,15 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
 
-class RadioService {
+class RadioService extends ChangeNotifier {
   final AudioPlayer _player = AudioPlayer();
   bool _isPlaying = false;
+  String _currentStationName = '';
 
   bool get isPlaying => _isPlaying;
+  String get currentStationName => _currentStationName;
 
   Future<List<Map<String, dynamic>>> searchStations(String query) async {
     final url = Uri.parse(
@@ -17,17 +20,20 @@ class RadioService {
     return list.cast<Map<String, dynamic>>();
   }
 
-  Future<void> play(String url) async {
+  Future<void> play(String url, {String stationName = ''}) async {
     try {
+      _currentStationName = stationName;
       await _player.setAudioSource(AudioSource.uri(Uri.parse(url)));
       await _player.play();
       _isPlaying = true;
+      notifyListeners();
     } catch (_) {}
   }
 
   Future<void> stop() async {
     await _player.stop();
     _isPlaying = false;
+    notifyListeners();
   }
 
   Future<void> setVolume(double volume) async {
@@ -36,7 +42,9 @@ class RadioService {
 
   double get volume => _player.volume;
 
+  @override
   void dispose() {
     _player.dispose();
+    super.dispose();
   }
 }

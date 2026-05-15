@@ -63,9 +63,9 @@ class VoiceService {
     _isListening = false;
     final lower = text.toLowerCase().trim();
 
-    if (lower.contains('pause') && radioService.isPlaying) {
+    if (lower.contains('stop') && radioService.isPlaying) {
       radioService.stop();
-      say('Paused');
+      say('Stopped');
       return;
     }
     if (lower.contains('volume up') && radioService.isPlaying) {
@@ -94,9 +94,9 @@ class VoiceService {
       case ActionType.radio:
         final url = cmd.actionParams['streamUrl'] as String?;
         if (url != null && url.isNotEmpty) {
-          radioService.play(url);
-          say(
-              'Playing ${cmd.actionParams['stationName'] ?? 'radio station'}');
+          final name = cmd.actionParams['stationName'] as String? ?? '';
+          radioService.play(url, stationName: name);
+          say('Playing $name');
         } else {
           say('No stream URL configured');
         }

@@ -4,36 +4,70 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'services/command_service.dart';
 import 'services/radio_service.dart';
 import 'services/voice_service.dart';
+import 'services/theme_service.dart';
 import 'screens/home_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final commandService = CommandService();
-    final radioService = RadioService();
-    final voiceService = VoiceService(
-      speech: stt.SpeechToText(),
-      tts: FlutterTts(),
-      commandService: commandService,
-      radioService: radioService,
-    );
+  State<MyApp> createState() => _MyAppState();
+}
 
+class _MyAppState extends State<MyApp> {
+  final themeService = ThemeService();
+  final commandService = CommandService();
+  final radioService = RadioService();
+  late final voiceService = VoiceService(
+    speech: stt.SpeechToText(),
+    tts: FlutterTts(),
+    commandService: commandService,
+    radioService: radioService,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    themeService.addListener(() => setState(() {}));
+    themeService.load();
+  }
+
+  @override
+  void dispose() {
+    themeService.removeListener(() => setState(() {}));
+    radioService.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Radio Sathi',
+      themeMode: themeService.mode,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.light,
+        ),
+        useMaterial3: true,
+      ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.dark,
+        ),
         useMaterial3: true,
       ),
       home: HomeScreen(
         voiceService: voiceService,
         commandService: commandService,
         radioService: radioService,
+        themeService: themeService,
       ),
       debugShowCheckedModeBanner: false,
     );
