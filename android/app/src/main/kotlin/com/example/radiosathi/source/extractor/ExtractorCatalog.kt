@@ -11,7 +11,7 @@ class ExtractorCatalog(
     private val downloader: OkHttpDownloader = OkHttpDownloader(),
 ) {
     private val service = ServiceList.YouTube
-    private val redirectClient = OkHttpClient.Builder()
+    private val client = OkHttpClient.Builder()
         .followRedirects(true)
         .followSslRedirects(true)
         .build()
@@ -23,18 +23,34 @@ class ExtractorCatalog(
     fun stream(videoUrl: String): Map<String, Any?>? {
         if (!videoUrl.startsWith("http")) return null
 
-        val resolved = resolveRedirects(videoUrl)
-        return tryExtract(resolved ?: videoUrl)
+        if (videoUrl.contains("/@")) {
+            val liveVideoUrl = resolveHandleLive(videoUrl)
+            if (liveVideoUrl != null) {
+                return tryExtract(liveVideoUrl)
+            }
+            return null
+        }
+
+        return tryExtract(videoUrl)
     }
 
-    private fun resolveRedirects(url: String): String? {
+    private fun resolveHandleLive(url: String): String? {
         return try {
-            val request = okhttp3.Request.Builder()
-                .url(url).method("HEAD", null).build()
-            redirectClient.newCall(request).execute().use { resp ->
-                val finalUrl = resp.request.url.toString()
-                if (finalUrl != url) finalUrl else null
+            val request = okhttp3.Request.Builder().url(url).build()
+            val html = client.newCall(request).execute().use { resp ->
+                if (!resp.isSuccessful) return@use null
+                resp.body?.string() ?: return@use null
+            } ?: return null
+
+            val liveIdRegex = Regex("\"liveStreamabilityRenderer\":\\{\"videoId\":\"([a-zA-Z0-9_-]{11})\"")
+            val match = liveIdRegex.find(html)
+            val videoId = match?.groupValues?.getOrNull(1)
+
+            if (videoId != null) {
+                return "https://www.youtube.com/watch?v=$videoId"
             }
+
+            null
         } catch (_: Exception) { null }
     }
 
