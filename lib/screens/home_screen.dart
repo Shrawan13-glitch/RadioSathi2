@@ -3,6 +3,7 @@ import '../services/voice_service.dart';
 import '../services/command_service.dart';
 import '../services/radio_service.dart';
 import '../services/theme_service.dart';
+import '../services/log_service.dart';
 import 'commands_screen.dart';
 import 'settings_screen.dart';
 
@@ -11,6 +12,7 @@ class HomeScreen extends StatefulWidget {
   final CommandService commandService;
   final RadioService radioService;
   final ThemeService themeService;
+  final LogService logService;
 
   const HomeScreen({
     super.key,
@@ -18,6 +20,7 @@ class HomeScreen extends StatefulWidget {
     required this.commandService,
     required this.radioService,
     required this.themeService,
+    required this.logService,
   });
 
   @override
@@ -95,6 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
               MaterialPageRoute(
                 builder: (_) => SettingsScreen(
                       themeService: widget.themeService,
+                      logService: widget.logService,
                     ),
               ),
             ),

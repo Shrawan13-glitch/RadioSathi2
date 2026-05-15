@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import '../services/theme_service.dart';
+import '../services/log_service.dart';
+import 'log_viewer_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   final ThemeService themeService;
+  final LogService logService;
 
-  const SettingsScreen({super.key, required this.themeService});
+  const SettingsScreen({
+    super.key,
+    required this.themeService,
+    required this.logService,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +65,21 @@ class SettingsScreen extends StatelessWidget {
                 onChanged: (v) {
                   if (v != null) themeService.setMode(v);
                 },
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.bug_report),
+              title: const Text('Debug Logs'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      LogViewerScreen(logService: logService),
+                ),
               ),
             ),
           ),

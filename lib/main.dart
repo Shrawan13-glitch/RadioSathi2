@@ -6,6 +6,7 @@ import 'services/radio_service.dart';
 import 'services/voice_service.dart';
 import 'services/theme_service.dart';
 import 'services/youtube_service.dart';
+import 'services/log_service.dart';
 import 'screens/home_screen.dart';
 
 void main() {
@@ -24,18 +25,22 @@ class _MyAppState extends State<MyApp> {
   final themeService = ThemeService();
   final commandService = CommandService();
   final radioService = RadioService();
-  final youtubeService = YoutubeService();
+  final logService = LogService();
+  late final youtubeService = YoutubeService(logService: logService);
+
   late final voiceService = VoiceService(
     speech: stt.SpeechToText(),
     tts: FlutterTts(),
     commandService: commandService,
     radioService: radioService,
     youtubeService: youtubeService,
+    logService: logService,
   );
 
   @override
   void initState() {
     super.initState();
+    radioService.attachLog(logService);
     themeService.addListener(() => setState(() {}));
     themeService.load();
   }
@@ -71,6 +76,7 @@ class _MyAppState extends State<MyApp> {
         commandService: commandService,
         radioService: radioService,
         themeService: themeService,
+        logService: logService,
       ),
       debugShowCheckedModeBanner: false,
     );
