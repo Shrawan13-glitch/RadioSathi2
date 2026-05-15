@@ -10,14 +10,18 @@ class YoutubeService {
     try {
       final result = await _channel
           .invokeMapMethod<String, dynamic>('stream', {'url': url});
-      if (result == null) return null;
+      if (result == null) {
+        print('YoutubeService: native returned null for $url');
+        return null;
+      }
 
       return {
         'title': (result['title'] as String?) ?? '',
         'uploader': (result['uploader'] as String?) ?? '',
         'streamUrl': (result['streamUrl'] as String?) ?? '',
       };
-    } on PlatformException {
+    } on PlatformException catch (e) {
+      print('YoutubeService: PlatformException for $url: ${e.message}');
       return null;
     }
   }
