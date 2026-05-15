@@ -7,9 +7,20 @@ class RadioService extends ChangeNotifier {
   final AudioPlayer _player = AudioPlayer();
   bool _isPlaying = false;
   String _currentStationName = '';
+  String _currentTrack = '';
 
   bool get isPlaying => _isPlaying;
   String get currentStationName => _currentStationName;
+  String get currentTrack => _currentTrack;
+
+  RadioService() {
+    _player.icyMetadataStream.listen((icy) {
+      if (icy?.info?.title != null) {
+        _currentTrack = icy!.info!.title!;
+        notifyListeners();
+      }
+    });
+  }
 
   Future<List<Map<String, dynamic>>> searchStations(String query) async {
     final url = Uri.parse(
@@ -23,6 +34,7 @@ class RadioService extends ChangeNotifier {
   Future<void> play(String url, {String stationName = ''}) async {
     try {
       _currentStationName = stationName;
+      _currentTrack = '';
       await _player.setAudioSource(AudioSource.uri(Uri.parse(url)));
       await _player.play();
       _isPlaying = true;

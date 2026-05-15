@@ -70,6 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final isPlaying = widget.radioService.isPlaying;
     final stationName = widget.radioService.currentStationName;
+    final track = widget.radioService.currentTrack;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -105,6 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onLongPressStart: _initialized && !_isListening
             ? (_) => _startListening()
             : null,
+        behavior: HitTestBehavior.translucent,
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -138,8 +140,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: (_isListening ? Colors.red : Colors.deepPurple)
-                            .withValues(alpha: 0.3),
+                        color:
+                            (_isListening ? Colors.red : Colors.deepPurple)
+                                .withValues(alpha: 0.3),
                         blurRadius: _isListening ? 24 : 12,
                         spreadRadius: _isListening ? 8 : 2,
                       ),
@@ -182,7 +185,8 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomSheet: isPlaying
           ? Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: Colors.green.shade700,
                 boxShadow: [
@@ -198,14 +202,29 @@ class _HomeScreenState extends State<HomeScreen> {
                   const Icon(Icons.radio, color: Colors.white, size: 20),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      stationName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      overflow: TextOverflow.ellipsis,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          stationName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (track.isNotEmpty)
+                          Text(
+                            track,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              fontSize: 12,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
                     ),
                   ),
                   Container(
