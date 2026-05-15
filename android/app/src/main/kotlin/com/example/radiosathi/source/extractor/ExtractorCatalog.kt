@@ -169,16 +169,35 @@ class ExtractorCatalog(
         }
     }
 
+    // NewPipe approach for live streams:
+    //   Priority 1: DASH manifest (info.dashMpdUrl)
+    //   Priority 2: HLS manifest  (info.hlsUrl)
+    //   Priority 3: individual audio streams (last resort — YouTube CDN
+    //     requires Origin/Referer/POST headers that ExoPlayer won't send)
     private fun pickAudioUrl(info: StreamInfo, diag: MutableMap<String, Any?>): String? {
-        val streams = info.audioStreams.filter { it.isUrl }
-        android.util.Log.i(tag, "Total audio streams: ${info.audioStreams.size}")
-        android.util.Log.i(tag, "Filtered (isUrl=true): ${streams.size}")
+        val dash = info.dashMpdUrl
+        if (dash != null && dash.isNotEmpty()) {
+            android.util.Log.i(tag, "DASH manifest: ${dash.take(80)}...")
+            diag["diag_selectedType"] = "dash"
+            diag["diag_step"] = "4:dash"
+            return dash
+        }
 
+        val hls = info.hlsUrl
+        if (hls != null && hls.isNotEmpty()) {
+            android.util.Log.i(tag, "HLS manifest: ${hls.take(80)}...")
+            diag["diag_selectedType"] = "hls"
+            diag["diag_step"] = "4:hls"
+            return hls
+        }
+
+        android.util.Log.w(tag, "No DASH/HLS manifest — falling back to individual audio streams")
+        val streams = info.audioStreams.filter { it.isUrl }
+        android.util.Log.i(tag, "Individual audio streams: ${streams.size} / ${info.audioStreams.size}")
         if (streams.isNotEmpty()) {
             val bitrates = streams.map { maxOf(it.bitrate, it.averageBitrate) }
             val urls = streams.map { it.url?.take(80).orEmpty() }
             val deliveries = streams.map { it.deliveryMethod }
-            android.util.Log.i(tag, "Stream details:")
             for (i in streams.indices) {
                 android.util.Log.i(tag, "  [$i] bitrate=${bitrates[i]} delivery=${deliveries[i]} url=${urls[i]}...")
             }
@@ -187,24 +206,15 @@ class ExtractorCatalog(
 
             val best = streams.maxByOrNull { maxOf(it.bitrate, it.averageBitrate) }
             if (best != null) {
-                android.util.Log.i(tag, "Selected stream: bitrate=${maxOf(best.bitrate, best.averageBitrate)} delivery=${best.deliveryMethod}")
-                diag["diag_selectedType"] = "audio_${best.deliveryMethod}"
+                android.util.Log.i(tag, "FALLBACK selected stream: bitrate=${maxOf(best.bitrate, best.averageBitrate)}")
+                diag["diag_selectedType"] = "audio_fallback"
+                diag["diag_step"] = "4:audio_fallback"
                 return best.url
             }
         }
 
-        val hls = info.hlsUrl
-        if (hls != null && hls.isNotEmpty()) {
-            android.util.Log.i(tag, "FALLBACK to HLS URL: ${hls.take(80)}...")
-            diag["diag_step"] = "4:hls_fallback"
-            diag["diag_streamCount"] = "${streams.size}"
-            diag["diag_selectedType"] = "hls"
-            return hls
-        }
-
-        android.util.Log.e(tag, "NO AUDIO: streams=${info.audioStreams.size} (url=${streams.size}) hls=$hls")
+        android.util.Log.e(tag, "NO AUDIO SOURCE: dash=$dash hls=$hls streams=${info.audioStreams.size}")
         diag["diag_step"] = "4:no_audio"
-        diag["diag_noAudioReason"] = "streams=${info.audioStreams.size} usable=${streams.size} hls=${hls}"
         return null
     }
 }
