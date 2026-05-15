@@ -68,13 +68,15 @@ class _HomeScreenState extends State<HomeScreen> {
     _speech.listen(
       onResult: (result) {
         _lastWords = result.recognizedWords;
+        if (result.finalResult) {
+          _onSpeechFinalized();
+        }
       },
+      pauseFor: const Duration(seconds: 2),
     );
   }
 
-  void _stopListening() async {
-    if (!_isListening) return;
-    await _speech.stop();
+  void _onSpeechFinalized() {
     setState(() {
       _isListening = false;
       if (_lastWords.isNotEmpty) {
@@ -82,64 +84,80 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     });
     if (_lastWords.isNotEmpty) {
-      await _flutterTts.speak('You said: $_lastWords');
+      _flutterTts.speak('You said: $_lastWords');
     } else {
-      await _flutterTts.speak('No speech detected');
+      _flutterTts.speak('No speech detected');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isListening ? Colors.black : Colors.white,
+      backgroundColor: Colors.white,
       body: GestureDetector(
-        onLongPressStart: _isInitialized ? (_) => _startListening() : null,
-        onLongPressEnd: _isInitialized ? (_) => _stopListening() : null,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_utterances.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Text(
-                      _utterances.first,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w500,
-                        color: _isListening ? Colors.white70 : Colors.black87,
-                      ),
+        onLongPressStart: _isInitialized && !_isListening
+            ? (_) => _startListening()
+            : null,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_utterances.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(
+                    _utterances.first,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                const SizedBox(height: 48),
-                AnimatedScale(
-                  scale: _isListening ? 1.3 : 1.0,
-                  duration: const Duration(milliseconds: 200),
+                ),
+              const SizedBox(height: 60),
+              GestureDetector(
+                onTap: _isListening
+                    ? () {
+                        _speech.stop();
+                        _onSpeechFinalized();
+                      }
+                    : null,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: _isListening ? 100 : 72,
+                  height: _isListening ? 100 : 72,
+                  decoration: BoxDecoration(
+                    color: _isListening ? Colors.red : Colors.deepPurple,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: (_isListening ? Colors.red : Colors.deepPurple)
+                            .withValues(alpha: 0.3),
+                        blurRadius: _isListening ? 24 : 12,
+                        spreadRadius: _isListening ? 8 : 2,
+                      ),
+                    ],
+                  ),
                   child: Icon(
                     _isListening ? Icons.mic : Icons.mic_none,
-                    size: 80,
-                    color: _isListening ? Colors.red : Colors.deepPurple,
+                    color: Colors.white,
+                    size: _isListening ? 48 : 36,
                   ),
                 ),
-                const SizedBox(height: 24),
-                Text(
-                  _isListening
-                      ? 'Listening...'
-                      : _utterances.isEmpty
-                          ? 'Long press anywhere to speak'
-                          : 'Long press again to speak',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: _isListening
-                        ? Colors.white54
-                        : Colors.grey.shade600,
-                  ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                _isListening
+                    ? 'Tap the mic to stop'
+                    : _utterances.isEmpty
+                        ? 'Hold anywhere to speak'
+                        : 'Hold again to speak',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.grey.shade600,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
