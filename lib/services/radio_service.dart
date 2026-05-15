@@ -32,14 +32,12 @@ class RadioService extends ChangeNotifier {
   }
 
   Future<void> play(String url, {String stationName = ''}) async {
-    try {
-      _currentStationName = stationName;
-      _currentTrack = '';
-      await _player.setAudioSource(AudioSource.uri(Uri.parse(url)));
-      await _player.play();
-      _isPlaying = true;
-      notifyListeners();
-    } catch (_) {}
+    _currentStationName = stationName;
+    _currentTrack = '';
+    await _player.setAudioSource(AudioSource.uri(Uri.parse(url)));
+    await _player.play();
+    _isPlaying = true;
+    notifyListeners();
   }
 
   Future<void> stop() async {

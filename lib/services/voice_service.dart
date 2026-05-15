@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../models/command.dart';
@@ -68,43 +69,47 @@ class VoiceService {
 
     if (lower.contains('stop') && radioService.isPlaying) {
       radioService.stop();
-      say('Stopped');
+      unawaited(say('Stopped'));
       return;
     }
     if (lower.contains('volume up') && radioService.isPlaying) {
       final v = (radioService.volume + 0.1).clamp(0.0, 1.0);
       radioService.setVolume(v);
-      say('Volume ${(v * 100).round()} percent');
+      unawaited(say('Volume ${(v * 100).round()} percent'));
       return;
     }
     if (lower.contains('volume down') && radioService.isPlaying) {
       final v = (radioService.volume - 0.1).clamp(0.0, 1.0);
       radioService.setVolume(v);
-      say('Volume ${(v * 100).round()} percent');
+      unawaited(say('Volume ${(v * 100).round()} percent'));
       return;
     }
 
     final cmd = commandService.findMatch(text);
     if (cmd != null) {
-      _executeCommand(cmd);
+      unawaited(_executeCommand(cmd));
     } else {
-      say('No command found for: $text');
+      unawaited(say('No command found for: $text'));
     }
   }
 
-  void _executeCommand(Command cmd) {
+  Future<void> _executeCommand(Command cmd) async {
     switch (cmd.actionType) {
       case ActionType.radio:
         final url = cmd.actionParams['streamUrl'] as String?;
         if (url != null && url.isNotEmpty) {
           final name = cmd.actionParams['stationName'] as String? ?? '';
-          radioService.play(url, stationName: name);
-          say('Playing $name');
+          try {
+            await radioService.play(url, stationName: name);
+            await say('Playing $name');
+          } catch (_) {
+            await say('Could not play radio');
+          }
         } else {
-          say('No stream URL configured');
+          await say('No stream URL configured');
         }
       case ActionType.ytHandleLive:
-        _resolveYtLive(cmd);
+        await _resolveYtLive(cmd);
     }
   }
 
@@ -115,15 +120,23 @@ class VoiceService {
       return;
     }
 
-    say('Looking up $handle');
+    await say('Looking up $handle');
     final result = await youtubeService.resolveLiveStream(handle);
     if (result == null || (result['streamUrl'] ?? '').isEmpty) {
-      say('Could not find live stream');
+      await say('Could not find live stream');
       return;
     }
 
     final name = result['title'] ?? handle;
-    radioService.play(result['streamUrl']!, stationName: name);
-    say('Playing $name');
+    try {
+      await radioService.play(result['streamUrl']!, stationName: name);
+      if (radioService.isPlaying) {
+        await say('Playing $name');
+      } else {
+        await say('Could not play live stream');
+      }
+    } catch (_) {
+      await say('Could not play live stream');
+    }
   }
 }

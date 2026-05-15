@@ -182,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      bottomSheet: isPlaying
+      bottomSheet: isPlaying && !_isListening
           ? Container(
               width: double.infinity,
               padding:
