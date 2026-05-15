@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -16,6 +17,9 @@ class RadioService extends ChangeNotifier {
   String get currentStationName => _currentStationName;
   String get currentTrack => _currentTrack;
 
+  static const _userAgent =
+      'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36';
+
   void attachLog(LogService log) => _log = log;
 
   RadioService() {
@@ -30,10 +34,18 @@ class RadioService extends ChangeNotifier {
       _isPlaying = state.playing;
       final ps = state.processingState;
 
-      if (ps == ProcessingState.ready) _wasEverReady = true;
+      if (ps == ProcessingState.ready) {
+        _log?.i('AUDIO: ready');
+        _wasEverReady = true;
+      }
 
       if (ps == ProcessingState.idle && _wasEverReady) {
         _log?.e('AUDIO: player went idle unexpectedly after being ready');
+        _isPlaying = false;
+      }
+
+      if (ps == ProcessingState.idle && !_wasEverReady) {
+        _log?.e('AUDIO: player went idle before ever being ready (load failed)');
         _isPlaying = false;
       }
 
@@ -65,24 +77,49 @@ class RadioService extends ChangeNotifier {
     _currentTrack = '';
     _wasEverReady = false;
     _log?.i('PLAY: url=$url station="$stationName"');
+
     try {
-      await _player.setAudioSource(AudioSource.uri(Uri.parse(url)));
+      final uri = Uri.parse(url);
+      final source = AudioSource.uri(uri, headers: {
+        'User-Agent': _userAgent,
+      });
+      _log?.i('PLAY: setAudioSource with UA header');
+      await _player.setAudioSource(source);
+
       _log?.i('PLAY: AudioSource set, calling play()');
-      await _player.play();
+      await _player.play().timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          _log?.e('PLAY: play() TIMED OUT after 15s — HLS/URL likely requires additional headers or is unreachable');
+          _player.stop();
+        },
+      );
+
       _log?.i('PLAY: play() returned, isPlaying=${_player.playing} processingState=${_player.processingState}');
-      if (_player.processingState != ProcessingState.ready && _player.processingState != ProcessingState.buffering) {
+
+      if (_player.processingState == ProcessingState.idle) {
+        _log?.e('PLAY: player in idle after play() — source likely rejected');
+        _isPlaying = false;
+      } else if (_player.processingState == ProcessingState.ready ||
+          _player.processingState == ProcessingState.buffering) {
+        _isPlaying = true;
+      } else {
         _log?.e('PLAY: play() succeeded but state=${_player.processingState} not ready');
+        _isPlaying = false;
       }
-      _isPlaying = true;
       notifyListeners();
     } on PlayerException catch (e) {
       _log?.e('PLAY: PlayerException code=${e.code} message=${e.message}');
       _isPlaying = false;
-      rethrow;
+      notifyListeners();
+    } on TimeoutException {
+      _log?.e('PLAY: TimeoutException — playback never started');
+      _isPlaying = false;
+      notifyListeners();
     } on Exception catch (e) {
       _log?.e('PLAY: exception: $e');
       _isPlaying = false;
-      rethrow;
+      notifyListeners();
     }
   }
 
