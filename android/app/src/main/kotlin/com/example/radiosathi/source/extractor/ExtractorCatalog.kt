@@ -136,7 +136,7 @@ class ExtractorCatalog(
             android.util.Log.i(tag, "  duration=${info.duration}")
             android.util.Log.i(tag, "  audioStreamCount=${info.audioStreams.size}")
             android.util.Log.i(tag, "  hlsUrl=${info.hlsUrl}")
-            android.util.Log.i(tag, "  isLive=${info.isLive}  isLiveContent=${info.isLiveContent}")
+            android.util.Log.i(tag, "  streamType=${info.streamType}")
 
             diag["diag_step"] = "4:pick_audio"
             android.util.Log.i(tag, "=== STEP 4: PICK AUDIO ===")
@@ -176,7 +176,7 @@ class ExtractorCatalog(
 
         if (streams.isNotEmpty()) {
             val bitrates = streams.map { maxOf(it.bitrate, it.averageBitrate) }
-            val urls = streams.map { it.url.take(80) }
+            val urls = streams.map { it.url?.take(80).orEmpty() }
             val deliveries = streams.map { it.deliveryMethod }
             android.util.Log.i(tag, "Stream details:")
             for (i in streams.indices) {
