@@ -4,7 +4,6 @@ import com.example.radiosathi.source.http.OkHttpDownloader
 import okhttp3.OkHttpClient
 import org.schabi.newpipe.extractor.NewPipe
 import org.schabi.newpipe.extractor.ServiceList
-import org.schabi.newpipe.extractor.stream.DeliveryMethod
 import org.schabi.newpipe.extractor.stream.StreamInfo
 
 class ExtractorCatalog(
@@ -23,20 +22,19 @@ class ExtractorCatalog(
     fun stream(videoUrl: String): Map<String, Any?>? {
         if (!videoUrl.startsWith("http")) return null
 
-        if (videoUrl.contains("/@")) {
-            val liveVideoUrl = resolveHandleLive(videoUrl)
-            if (liveVideoUrl != null) {
-                return tryExtract(liveVideoUrl)
-            }
-            return null
-        }
+        val targetUrl = if (videoUrl.contains("/@")) {
+            resolveHandleLive(videoUrl) ?: return null
+        } else videoUrl
 
-        return tryExtract(videoUrl)
+        return tryExtract(targetUrl)
     }
 
     private fun resolveHandleLive(url: String): String? {
         return try {
-            val request = okhttp3.Request.Builder().url(url).build()
+            val request = okhttp3.Request.Builder()
+                .url(url)
+                .header("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36")
+                .build()
             val html = client.newCall(request).execute().use { resp ->
                 if (!resp.isSuccessful) return@use null
                 resp.body?.string() ?: return@use null
@@ -44,13 +42,8 @@ class ExtractorCatalog(
 
             val liveIdRegex = Regex("\"liveStreamabilityRenderer\":\\{\"videoId\":\"([a-zA-Z0-9_-]{11})\"")
             val match = liveIdRegex.find(html)
-            val videoId = match?.groupValues?.getOrNull(1)
-
-            if (videoId != null) {
-                return "https://www.youtube.com/watch?v=$videoId"
-            }
-
-            null
+            val videoId = match?.groupValues?.getOrNull(1) ?: return null
+            "https://www.youtube.com/watch?v=$videoId"
         } catch (_: Exception) { null }
     }
 
@@ -67,10 +60,13 @@ class ExtractorCatalog(
     }
 
     private fun pickAudioUrl(info: StreamInfo): String? {
-        val direct = info.audioStreams
-            .filter { it.isUrl && it.deliveryMethod != DeliveryMethod.HLS }
-        return if (direct.isNotEmpty()) {
-            direct.maxByOrNull { maxOf(it.bitrate, it.averageBitrate) }?.url
-        } else info.hlsUrl
+        val streams = info.audioStreams.filter { it.isUrl }
+        if (streams.isNotEmpty()) {
+            val best = streams.maxByOrNull { maxOf(it.bitrate, it.averageBitrate) }
+            if (best != null) return best.url
+        }
+        val hls = info.hlsUrl
+        if (hls != null && hls.isNotEmpty()) return hls
+        return null
     }
 }

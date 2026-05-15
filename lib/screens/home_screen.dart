@@ -73,7 +73,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final track = widget.radioService.currentTrack;
 
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Radio Sathi'),
         centerTitle: true,
