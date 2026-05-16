@@ -74,13 +74,16 @@ class VoiceService extends ChangeNotifier {
         },
         listenFor: const Duration(seconds: 30),
         pauseFor: const Duration(seconds: 2),
-      );
+      ).timeout(const Duration(seconds: 35));
+    } on TimeoutException {
+      logService.w('VoiceService: speech.listen() timed out');
+      unawaited(speech.stop());
     } catch (e) {
       logService.e('VoiceService: listen error: $e');
     }
 
     if (_isListening) {
-      logService.i('VoiceService: listening timed out (no speech)');
+      logService.i('VoiceService: listening ended (timeout or early return)');
       _isListening = false;
       notifyListeners();
       onDone?.call();

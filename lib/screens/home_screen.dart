@@ -29,7 +29,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _lastText = '';
-  bool _isListening = false;
   bool _initialized = false;
 
   @override
@@ -45,9 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onVoiceChanged() {
-    if (_isListening != widget.voiceService.isListening) {
-      setState(() => _isListening = widget.voiceService.isListening);
-    }
+    setState(() {});
   }
 
   Future<void> _init() async {
@@ -58,13 +55,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _startListening() {
     if (!_initialized) return;
-    setState(() => _isListening = true);
     widget.voiceService.startListening(
       onPartialResult: (text) {
         setState(() => _lastText = text);
-      },
-      onDone: () {
-        setState(() => _isListening = false);
       },
     );
   }
@@ -114,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       body: GestureDetector(
-        onLongPressStart: _initialized && !_isListening
+        onLongPressStart: _initialized && !widget.voiceService.isListening
             ? (_) => _startListening()
             : null,
         behavior: HitTestBehavior.translucent,
@@ -136,39 +129,36 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               const SizedBox(height: 60),
               GestureDetector(
-                onTap: _isListening
-                    ? () {
-                        widget.voiceService.stopListening();
-                        setState(() => _isListening = false);
-                      }
+                onTap: widget.voiceService.isListening
+                    ? () => widget.voiceService.stopListening()
                     : null,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
-                  width: _isListening ? 100 : 72,
-                  height: _isListening ? 100 : 72,
+                  width: widget.voiceService.isListening ? 100 : 72,
+                  height: widget.voiceService.isListening ? 100 : 72,
                   decoration: BoxDecoration(
-                    color: _isListening ? Colors.red : Colors.deepPurple,
+                    color: widget.voiceService.isListening ? Colors.red : Colors.deepPurple,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
                         color:
-                            (_isListening ? Colors.red : Colors.deepPurple)
+                            (widget.voiceService.isListening ? Colors.red : Colors.deepPurple)
                                 .withValues(alpha: 0.3),
-                        blurRadius: _isListening ? 24 : 12,
-                        spreadRadius: _isListening ? 8 : 2,
+                        blurRadius: widget.voiceService.isListening ? 24 : 12,
+                        spreadRadius: widget.voiceService.isListening ? 8 : 2,
                       ),
                     ],
                   ),
                   child: Icon(
-                    _isListening ? Icons.mic : Icons.mic_none,
+                    widget.voiceService.isListening ? Icons.mic : Icons.mic_none,
                     color: Colors.white,
-                    size: _isListening ? 48 : 36,
+                    size: widget.voiceService.isListening ? 48 : 36,
                   ),
                 ),
               ),
               const SizedBox(height: 24),
               Text(
-                _isListening
+                widget.voiceService.isListening
                     ? 'Tap the mic to stop'
                     : !_initialized
                         ? 'Initializing...'
@@ -178,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: Colors.grey.shade600,
                 ),
               ),
-              if (_lastText.isNotEmpty && _isListening)
+              if (widget.voiceService.isListening)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
@@ -193,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      bottomSheet: isPlaying && !_isListening
+      bottomSheet: isPlaying && !widget.voiceService.isListening
           ? Container(
               width: double.infinity,
               padding:
