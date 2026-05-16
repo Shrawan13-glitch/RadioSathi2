@@ -146,9 +146,7 @@ class VoiceService extends ChangeNotifier {
           logService.i('RADIO: playing "$name" url=$url');
           await say('Playing $name');
           await radioService.play(url, stationName: name);
-          if (!radioService.isPlaying) {
-            logService.e('RADIO: play() completed but isPlaying=false');
-          }
+          logService.i('RADIO: play() returned for "$name"');
         } else {
           logService.w('RADIO: no stream URL configured');
           await say('No stream URL configured');
@@ -188,8 +186,6 @@ class VoiceService extends ChangeNotifier {
 
     await say('Playing $name');
     await radioService.play(streamUrl, stationName: name);
-    if (!radioService.isPlaying) {
-      logService.e('YT_LIVE: play() completed but isPlaying=false');
-    }
+    logService.i('YT_LIVE: play() returned for "$name"');
   }
 }
