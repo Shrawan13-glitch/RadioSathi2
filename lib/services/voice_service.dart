@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../models/command.dart';
@@ -6,14 +7,16 @@ import 'command_service.dart';
 import 'radio_service.dart';
 import 'youtube_service.dart';
 import 'log_service.dart';
+import 'sound_service.dart';
 
-class VoiceService {
+class VoiceService extends ChangeNotifier {
   final stt.SpeechToText speech;
   final FlutterTts tts;
   final CommandService commandService;
   final RadioService radioService;
   final YoutubeService youtubeService;
   final LogService logService;
+  final SoundService soundService;
   bool _isListening = false;
   bool _initialized = false;
 
@@ -24,6 +27,7 @@ class VoiceService {
     required this.radioService,
     required this.youtubeService,
     required this.logService,
+    required this.soundService,
   });
 
   bool get isListening => _isListening;
@@ -40,31 +44,48 @@ class VoiceService {
     logService.i('VoiceService: STT initialized=$_initialized');
   }
 
-  void startListening({
+  Future<void> startListening({
     required void Function(String text) onPartialResult,
     void Function()? onDone,
-  }) {
+  }) async {
     if (!_initialized) return;
     logService.i('VoiceService: started listening');
     _isListening = true;
-    speech.listen(
+    notifyListeners();
+    await soundService.playStart();
+
+    await speech.listen(
       onResult: (result) {
         final text = result.recognizedWords;
         onPartialResult(text);
         if (result.finalResult) {
           logService.i('VoiceService: final result="$text"');
+          _isListening = false;
+          notifyListeners();
           _handleCommand(text);
           onDone?.call();
+          soundService.playStop();
         }
       },
       pauseFor: const Duration(seconds: 2),
     );
+
+    if (_isListening) {
+      logService.i('VoiceService: listening timed out (no speech)');
+      _isListening = false;
+      notifyListeners();
+      onDone?.call();
+      soundService.playStop();
+    }
   }
 
   void stopListening() {
+    if (!_isListening) return;
     logService.i('VoiceService: stopped listening');
     _isListening = false;
+    notifyListeners();
     speech.stop();
+    soundService.playStop();
   }
 
   Future<void> say(String text) async {
@@ -73,7 +94,6 @@ class VoiceService {
   }
 
   void _handleCommand(String text) {
-    _isListening = false;
     final lower = text.toLowerCase().trim();
 
     if (lower.contains('stop') && radioService.isPlaying) {

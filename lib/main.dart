@@ -7,6 +7,7 @@ import 'services/voice_service.dart';
 import 'services/theme_service.dart';
 import 'services/youtube_service.dart';
 import 'services/log_service.dart';
+import 'services/sound_service.dart';
 import 'screens/home_screen.dart';
 
 void main() {
@@ -26,6 +27,7 @@ class _MyAppState extends State<MyApp> {
   final commandService = CommandService();
   final radioService = RadioService();
   final logService = LogService();
+  final soundService = SoundService();
   late final youtubeService = YoutubeService(logService: logService);
 
   late final voiceService = VoiceService(
@@ -35,6 +37,7 @@ class _MyAppState extends State<MyApp> {
     radioService: radioService,
     youtubeService: youtubeService,
     logService: logService,
+    soundService: soundService,
   );
 
   @override
