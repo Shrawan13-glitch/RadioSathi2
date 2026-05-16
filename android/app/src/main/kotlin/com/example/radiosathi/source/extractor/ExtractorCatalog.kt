@@ -170,19 +170,13 @@ class ExtractorCatalog(
     }
 
     // NewPipe approach for live streams:
-    //   Priority 1: DASH manifest (info.dashMpdUrl)
-    //   Priority 2: HLS manifest  (info.hlsUrl)
-    //   Priority 3: individual audio streams (last resort — YouTube CDN
-    //     requires Origin/Referer/POST headers that ExoPlayer won't send)
+    //   Priority 1: HLS manifest (info.hlsUrl) — YouTube DASH manifests
+    //     need a custom manifest parser (YoutubeDashLiveManifestParser) to
+    //     fix availabilityStartTime, which ExoPlayer can't do without.
+    //   Priority 2: DASH manifest (info.dashMpdUrl) — if HLS not available
+    //   Priority 3: individual audio streams — last resort, YouTube CDN
+    //     requires Origin/Referer/POST headers individual URLs won't get.
     private fun pickAudioUrl(info: StreamInfo, diag: MutableMap<String, Any?>): String? {
-        val dash = info.dashMpdUrl
-        if (dash != null && dash.isNotEmpty()) {
-            android.util.Log.i(tag, "DASH manifest: ${dash.take(80)}...")
-            diag["diag_selectedType"] = "dash"
-            diag["diag_step"] = "4:dash"
-            return dash
-        }
-
         val hls = info.hlsUrl
         if (hls != null && hls.isNotEmpty()) {
             android.util.Log.i(tag, "HLS manifest: ${hls.take(80)}...")
@@ -191,7 +185,15 @@ class ExtractorCatalog(
             return hls
         }
 
-        android.util.Log.w(tag, "No DASH/HLS manifest — falling back to individual audio streams")
+        val dash = info.dashMpdUrl
+        if (dash != null && dash.isNotEmpty()) {
+            android.util.Log.i(tag, "DASH manifest (HLS unavailable): ${dash.take(80)}...")
+            diag["diag_selectedType"] = "dash"
+            diag["diag_step"] = "4:dash"
+            return dash
+        }
+
+        android.util.Log.w(tag, "No manifest URL — falling back to individual audio streams")
         val streams = info.audioStreams.filter { it.isUrl }
         android.util.Log.i(tag, "Individual audio streams: ${streams.size} / ${info.audioStreams.size}")
         if (streams.isNotEmpty()) {
