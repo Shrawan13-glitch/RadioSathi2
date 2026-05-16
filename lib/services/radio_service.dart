@@ -17,9 +17,6 @@ class RadioService extends ChangeNotifier {
   String get currentStationName => _currentStationName;
   String get currentTrack => _currentTrack;
 
-  static const _userAgent =
-      'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36';
-
   void attachLog(LogService log) => _log = log;
 
   RadioService() {
@@ -79,12 +76,8 @@ class RadioService extends ChangeNotifier {
     _log?.i('PLAY: url=$url station="$stationName"');
 
     try {
-      final uri = Uri.parse(url);
-      final source = AudioSource.uri(uri, headers: {
-        'User-Agent': _userAgent,
-      });
-      _log?.i('PLAY: setAudioSource with UA header');
-      await _player.setAudioSource(source);
+      _log?.i('PLAY: setAudioSource');
+      await _player.setAudioSource(AudioSource.uri(Uri.parse(url)));
 
       _log?.i('PLAY: AudioSource set, calling play()');
       await _player.play().timeout(
