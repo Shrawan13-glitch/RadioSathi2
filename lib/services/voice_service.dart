@@ -50,7 +50,6 @@ class VoiceService extends ChangeNotifier {
 
   Future<void> startListening({
     required void Function(String text) onPartialResult,
-    void Function()? onDone,
   }) async {
     if (!_initialized) return;
     logService.i('VoiceService: started listening');
@@ -65,11 +64,7 @@ class VoiceService extends ChangeNotifier {
           onPartialResult(text);
           if (result.finalResult) {
             logService.i('VoiceService: final result="$text"');
-            _isListening = false;
-            notifyListeners();
             _handleCommand(text);
-            onDone?.call();
-            soundService.playStop();
           }
         },
         listenFor: const Duration(seconds: 30),
@@ -83,10 +78,9 @@ class VoiceService extends ChangeNotifier {
     }
 
     if (_isListening) {
-      logService.i('VoiceService: listening ended (timeout or early return)');
+      logService.i('VoiceService: listening ended');
       _isListening = false;
       notifyListeners();
-      onDone?.call();
       soundService.playStop();
     }
   }
