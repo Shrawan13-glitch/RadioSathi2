@@ -63,6 +63,7 @@ class RadioService extends ChangeNotifier {
   Future<void> play(String url, {String stationName = ''}) async {
     _currentStationName = stationName;
     _currentTrack = '';
+    notifyListeners();
     _log?.i('PLAY: url=$url station="$stationName"');
 
     try {
