@@ -43,14 +43,6 @@ class VoiceService extends ChangeNotifier {
     _initialized = await speech.initialize(
       onStatus: (status) {
         logService.i('VoiceService: status=$status');
-        if (status == 'done' || status == 'notListening') {
-          if (_isListening) {
-            logService.i('VoiceService: stopped externally (status=$status)');
-            _isListening = false;
-            notifyListeners();
-            soundService.playStop();
-          }
-        }
       },
     );
     logService.i('VoiceService: STT initialized=$_initialized');
