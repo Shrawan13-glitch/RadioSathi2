@@ -40,7 +40,19 @@ class VoiceService extends ChangeNotifier {
     await tts.setPitch(1.0);
     await tts.setSpeechRate(0.5);
 
-    _initialized = await speech.initialize();
+    _initialized = await speech.initialize(
+      onStatus: (status) {
+        logService.i('VoiceService: status=$status');
+        if (status == 'done' || status == 'notListening') {
+          if (_isListening) {
+            logService.i('VoiceService: stopped externally (status=$status)');
+            _isListening = false;
+            notifyListeners();
+            soundService.playStop();
+          }
+        }
+      },
+    );
     logService.i('VoiceService: STT initialized=$_initialized');
   }
 
@@ -54,21 +66,26 @@ class VoiceService extends ChangeNotifier {
     notifyListeners();
     await soundService.playStart();
 
-    await speech.listen(
-      onResult: (result) {
-        final text = result.recognizedWords;
-        onPartialResult(text);
-        if (result.finalResult) {
-          logService.i('VoiceService: final result="$text"');
-          _isListening = false;
-          notifyListeners();
-          _handleCommand(text);
-          onDone?.call();
-          soundService.playStop();
-        }
-      },
-      pauseFor: const Duration(seconds: 2),
-    );
+    try {
+      await speech.listen(
+        onResult: (result) {
+          final text = result.recognizedWords;
+          onPartialResult(text);
+          if (result.finalResult) {
+            logService.i('VoiceService: final result="$text"');
+            _isListening = false;
+            notifyListeners();
+            _handleCommand(text);
+            onDone?.call();
+            soundService.playStop();
+          }
+        },
+        listenFor: const Duration(seconds: 30),
+        pauseFor: const Duration(seconds: 2),
+      );
+    } catch (e) {
+      logService.e('VoiceService: listen error: $e');
+    }
 
     if (_isListening) {
       logService.i('VoiceService: listening timed out (no speech)');

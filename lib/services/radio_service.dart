@@ -12,6 +12,7 @@ class RadioService extends ChangeNotifier {
   String _currentTrack = '';
   LogService? _log;
   bool _wasEverReady = false;
+  Timer? _idleTimer;
 
   bool get isPlaying => _isPlaying;
   String get currentStationName => _currentStationName;
@@ -28,17 +29,40 @@ class RadioService extends ChangeNotifier {
     });
 
     _player.playerStateStream.listen((state) {
+      final wasPlaying = _isPlaying;
       _isPlaying = state.playing;
       final ps = state.processingState;
 
       if (ps == ProcessingState.ready) {
         _log?.i('AUDIO: ready');
         _wasEverReady = true;
+        _idleTimer?.cancel();
+        _idleTimer = null;
       }
 
-      if (ps == ProcessingState.idle && _wasEverReady) {
-        _log?.e('AUDIO: player went idle unexpectedly after being ready');
+      if (ps == ProcessingState.buffering) {
+        _log?.i('AUDIO: buffering...');
+        _idleTimer?.cancel();
+        _idleTimer = null;
+      }
+
+      if (ps == ProcessingState.idle && _wasEverReady && state.playing) {
+        _log?.w('AUDIO: idle during playback, waiting for recovery...');
+        _isPlaying = true;
+        _idleTimer?.cancel();
+        _idleTimer = Timer(const Duration(seconds: 8), () {
+          _log?.e('AUDIO: idle persisted 8s, giving up');
+          _idleTimer = null;
+          _isPlaying = false;
+          notifyListeners();
+        });
+      }
+
+      if (ps == ProcessingState.idle && _wasEverReady && !state.playing) {
+        _log?.e('AUDIO: player went idle (stopped)');
         _isPlaying = false;
+        _idleTimer?.cancel();
+        _idleTimer = null;
       }
 
       if (ps == ProcessingState.idle && !_wasEverReady) {
@@ -50,7 +74,9 @@ class RadioService extends ChangeNotifier {
         _log?.i('AUDIO: loading...');
       }
 
-      notifyListeners();
+      if (wasPlaying != _isPlaying) {
+        notifyListeners();
+      }
     });
   }
 
@@ -73,6 +99,8 @@ class RadioService extends ChangeNotifier {
     _currentStationName = stationName;
     _currentTrack = '';
     _wasEverReady = false;
+    _idleTimer?.cancel();
+    _idleTimer = null;
     _log?.i('PLAY: url=$url station="$stationName"');
 
     try {
@@ -118,6 +146,8 @@ class RadioService extends ChangeNotifier {
 
   Future<void> stop() async {
     _log?.i('RADIO: stop() called');
+    _idleTimer?.cancel();
+    _idleTimer = null;
     await _player.stop();
     _isPlaying = false;
     notifyListeners();
@@ -131,6 +161,8 @@ class RadioService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _idleTimer?.cancel();
+    _idleTimer = null;
     _player.dispose();
     super.dispose();
   }

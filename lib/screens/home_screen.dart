@@ -36,11 +36,18 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     widget.radioService.addListener(_onRadioChanged);
+    widget.voiceService.addListener(_onVoiceChanged);
     _init();
   }
 
   void _onRadioChanged() {
     setState(() {});
+  }
+
+  void _onVoiceChanged() {
+    if (_isListening != widget.voiceService.isListening) {
+      setState(() => _isListening = widget.voiceService.isListening);
+    }
   }
 
   Future<void> _init() async {
@@ -65,6 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     widget.radioService.removeListener(_onRadioChanged);
+    widget.voiceService.removeListener(_onVoiceChanged);
     widget.voiceService.stopListening();
     super.dispose();
   }
