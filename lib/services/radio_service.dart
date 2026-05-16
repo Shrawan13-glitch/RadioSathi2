@@ -67,27 +67,7 @@ class RadioService extends ChangeNotifier {
 
     try {
       await _player.setAudioSource(AudioSource.uri(Uri.parse(url)));
-
-      Timer? loadTimer;
-      loadTimer = Timer(const Duration(seconds: 15), () {
-        _log?.e('PLAY: load timed out (15s)');
-        _player.stop();
-      });
-
-      StreamSubscription? sub;
-      sub = _player.playerStateStream.listen((state) {
-        if (state.processingState == ProcessingState.ready ||
-            state.processingState == ProcessingState.buffering) {
-          loadTimer?.cancel();
-          loadTimer = null;
-          sub?.cancel();
-        }
-      });
-
       await _player.play();
-      // play() returns only when stopped (for streaming) or on error
-      loadTimer?.cancel();
-      await sub.cancel();
       _log?.i('PLAY: play() returned (stopped)');
     } on PlayerException catch (e) {
       _log?.e('PLAY: PlayerException code=${e.code} message=${e.message}');
