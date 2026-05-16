@@ -17,7 +17,7 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "play" -> {
-                        MediaActionSound().play(MediaActionSound.CLICK)
+                        MediaActionSound().play(MediaActionSound.SHUTTER_CLICK)
                         result.success(null)
                     }
                     else -> result.notImplemented()
