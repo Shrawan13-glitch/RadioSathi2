@@ -1,9 +1,11 @@
 name: Android Release Build
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 1.0.0)'
+        required: true
 
 jobs:
   release:
@@ -53,5 +55,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ github.event.inputs.version }}
+          name: Release v${{ github.event.inputs.version }}
           files: build/app/outputs/flutter-apk/app-release.apk
           generate_release_notes: true
