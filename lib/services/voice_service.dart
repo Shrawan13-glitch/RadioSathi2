@@ -115,12 +115,10 @@ class VoiceService {
         if (url != null && url.isNotEmpty) {
           final name = cmd.actionParams['stationName'] as String? ?? '';
           logService.i('RADIO: playing "$name" url=$url');
-          try {
-            await radioService.play(url, stationName: name);
-            await say('Playing $name');
-          } catch (e) {
-            logService.e('RADIO: play failed: $e');
-            await say('Could not play radio');
+          await say('Playing $name');
+          await radioService.play(url, stationName: name);
+          if (!radioService.isPlaying) {
+            logService.e('RADIO: play() completed but isPlaying=false');
           }
         } else {
           logService.w('RADIO: no stream URL configured');
@@ -159,18 +157,10 @@ class VoiceService {
     final name = result['title'] ?? handle;
     logService.i('YT_LIVE: playing "$name" url=${streamUrl.length > 80 ? '${streamUrl.substring(0, 80)}...' : streamUrl}');
 
-    try {
-      await radioService.play(streamUrl, stationName: name);
-      if (radioService.isPlaying) {
-        logService.i('YT_LIVE: playback started successfully');
-        await say('Playing $name');
-      } else {
-        logService.e('YT_LIVE: play() completed but isPlaying=false');
-        await say('Could not play live stream');
-      }
-    } catch (e) {
-      logService.e('YT_LIVE: play threw: $e');
-      await say('Could not play live stream');
+    await say('Playing $name');
+    await radioService.play(streamUrl, stationName: name);
+    if (!radioService.isPlaying) {
+      logService.e('YT_LIVE: play() completed but isPlaying=false');
     }
   }
 }
