@@ -17,23 +17,7 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "play" -> {
-                        val type = call.argument<String>("type")
-                        val sound = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-                            when (type) {
-                                "start" -> MediaActionSound.START_VOICE_RECOGNITION
-                                "stop" -> MediaActionSound.STOP_VOICE_RECOGNITION
-                                else -> null
-                            }
-                        } else {
-                            when (type) {
-                                "start" -> MediaActionSound.FOCUS_GAIN
-                                "stop" -> MediaActionSound.FOCUS_LOSS
-                                else -> null
-                            }
-                        }
-                        if (sound != null) {
-                            MediaActionSound().play(sound)
-                        }
+                        MediaActionSound().play(MediaActionSound.CLICK)
                         result.success(null)
                     }
                     else -> result.notImplemented()

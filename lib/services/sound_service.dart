@@ -5,13 +5,13 @@ class SoundService {
 
   Future<void> playStart() async {
     try {
-      await _channel.invokeMethod('play', {'type': 'start'});
+      await _channel.invokeMethod('play');
     } catch (_) {}
   }
 
   Future<void> playStop() async {
     try {
-      await _channel.invokeMethod('play', {'type': 'stop'});
+      await _channel.invokeMethod('play');
     } catch (_) {}
   }
 }
