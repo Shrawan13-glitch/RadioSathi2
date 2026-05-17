@@ -1,3 +1,3 @@
--keep class com.google.re2j.** { *; }
--keep class java.beans.** { *; }
--keep class javax.script.** { *; }
+-dontwarn com.google.re2j.**
+-dontwarn java.beans.**
+-dontwarn javax.script.**
