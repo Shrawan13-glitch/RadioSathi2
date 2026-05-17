@@ -1,0 +1,3 @@
+-keep class com.google.re2j.** { *; }
+-keep class java.beans.** { *; }
+-keep class javax.script.** { *; }
