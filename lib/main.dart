@@ -8,6 +8,7 @@ import 'services/theme_service.dart';
 import 'services/youtube_service.dart';
 import 'services/log_service.dart';
 import 'services/sound_service.dart';
+import 'services/playlist_service.dart';
 import 'screens/home_screen.dart';
 
 void main() {
@@ -29,6 +30,11 @@ class _MyAppState extends State<MyApp> {
   final logService = LogService();
   final soundService = SoundService();
   late final youtubeService = YoutubeService(logService: logService);
+  late final playlistService = PlaylistService(
+    radioService: radioService,
+    youtubeService: youtubeService,
+    logService: logService,
+  );
 
   late final voiceService = VoiceService(
     speech: stt.SpeechToText(),
@@ -38,6 +44,7 @@ class _MyAppState extends State<MyApp> {
     youtubeService: youtubeService,
     logService: logService,
     soundService: soundService,
+    playlistService: playlistService,
   );
 
   @override
@@ -80,6 +87,7 @@ class _MyAppState extends State<MyApp> {
         radioService: radioService,
         themeService: themeService,
         logService: logService,
+        playlistService: playlistService,
       ),
       debugShowCheckedModeBanner: false,
     );

@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import '../models/command.dart';
 import '../services/command_service.dart';
+import '../services/playlist_service.dart';
 import 'create_command_screen.dart';
 
 class CommandsScreen extends StatefulWidget {
   final CommandService commandService;
+  final PlaylistService playlistService;
 
-  const CommandsScreen({super.key, required this.commandService});
+  const CommandsScreen(
+      {super.key, required this.commandService, required this.playlistService});
 
   @override
   State<CommandsScreen> createState() => _CommandsScreenState();
@@ -24,7 +27,9 @@ class _CommandsScreenState extends State<CommandsScreen> {
             context,
             MaterialPageRoute(
               builder: (_) => CreateCommandScreen(
-                  commandService: widget.commandService),
+                commandService: widget.commandService,
+                playlistService: widget.playlistService,
+              ),
             ),
           );
           setState(() {});
@@ -47,7 +52,11 @@ class _CommandsScreenState extends State<CommandsScreen> {
                           ? Icons.radio
                           : cmd.actionType == ActionType.ytHandleLive
                               ? Icons.play_circle
-                              : Icons.question_mark,
+                              : cmd.actionType == ActionType.playVideoFromLink
+                                  ? Icons.videocam
+                                  : cmd.actionType == ActionType.playPlaylist
+                                      ? Icons.queue_music
+                                      : Icons.question_mark,
                       color: cmd.enabled ? null : Colors.grey,
                     ),
                     title: Text(cmd.triggerPhrase),
@@ -56,7 +65,11 @@ class _CommandsScreenState extends State<CommandsScreen> {
                           ? 'Radio — ${cmd.actionParams['stationName'] ?? ''}'
                           : cmd.actionType == ActionType.ytHandleLive
                               ? 'YT Live — ${cmd.actionParams['handle'] ?? ''}'
-                              : '',
+                              : cmd.actionType == ActionType.playVideoFromLink
+                                  ? 'Video — ${cmd.actionParams['link'] ?? ''}'
+                                  : cmd.actionType == ActionType.playPlaylist
+                                      ? 'Playlist — ${cmd.actionParams['playlistId'] ?? ''}'
+                                      : '',
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,

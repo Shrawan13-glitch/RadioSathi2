@@ -4,8 +4,10 @@ import '../services/command_service.dart';
 import '../services/radio_service.dart';
 import '../services/theme_service.dart';
 import '../services/log_service.dart';
+import '../services/playlist_service.dart';
 import 'commands_screen.dart';
 import 'settings_screen.dart';
+import 'playlist_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoiceService voiceService;
@@ -13,6 +15,7 @@ class HomeScreen extends StatefulWidget {
   final RadioService radioService;
   final ThemeService themeService;
   final LogService logService;
+  final PlaylistService playlistService;
 
   const HomeScreen({
     super.key,
@@ -21,6 +24,7 @@ class HomeScreen extends StatefulWidget {
     required this.radioService,
     required this.themeService,
     required this.logService,
+    required this.playlistService,
   });
 
   @override
@@ -49,6 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _init() async {
     await widget.commandService.load();
+    await widget.playlistService.load();
     await widget.voiceService.init();
     setState(() => _initialized = true);
   }
@@ -88,6 +93,18 @@ class _HomeScreenState extends State<HomeScreen> {
               MaterialPageRoute(
                 builder: (_) => CommandsScreen(
                   commandService: widget.commandService,
+                  playlistService: widget.playlistService,
+                ),
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.queue_music),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PlaylistListScreen(
+                  playlistService: widget.playlistService,
                 ),
               ),
             ),

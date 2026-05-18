@@ -8,6 +8,7 @@ import 'radio_service.dart';
 import 'youtube_service.dart';
 import 'log_service.dart';
 import 'sound_service.dart';
+import 'playlist_service.dart';
 
 class VoiceService extends ChangeNotifier {
   final stt.SpeechToText speech;
@@ -17,6 +18,7 @@ class VoiceService extends ChangeNotifier {
   final YoutubeService youtubeService;
   final LogService logService;
   final SoundService soundService;
+  final PlaylistService playlistService;
   bool _isListening = false;
   bool _initialized = false;
 
@@ -28,6 +30,7 @@ class VoiceService extends ChangeNotifier {
     required this.youtubeService,
     required this.logService,
     required this.soundService,
+    required this.playlistService,
   });
 
   bool get isListening => _isListening;
@@ -150,7 +153,24 @@ class VoiceService extends ChangeNotifier {
         }
       case ActionType.ytHandleLive:
         await _resolveYtLive(cmd);
+      case ActionType.playVideoFromLink:
+        await _playVideoFromLink(cmd);
+      case ActionType.playPlaylist:
+        await _playPlaylistById(cmd);
     }
+  }
+
+  Future<void> _playVideoFromLink(Command cmd) async {
+    final link = cmd.actionParams['link'] as String?;
+    if (link == null || link.isEmpty) {
+      logService.w('VIDEO_LINK: no link configured');
+      await say('No video link configured');
+      return;
+    }
+    logService.i('VIDEO_LINK: playing link=$link');
+    await say('Playing video');
+    await radioService.play(link, stationName: 'Video Link');
+    logService.i('VIDEO_LINK: play() returned');
   }
 
   Future<void> _resolveYtLive(Command cmd) async {
@@ -184,5 +204,29 @@ class VoiceService extends ChangeNotifier {
     await say('Playing $name');
     await radioService.play(streamUrl, stationName: name);
     logService.i('YT_LIVE: play() returned for "$name"');
+  }
+
+  Future<void> _playPlaylistById(Command cmd) async {
+    final playlistId = cmd.actionParams['playlistId'] as String?;
+    if (playlistId == null || playlistId.isEmpty) {
+      logService.w('PLAYLIST_CMD: no playlist ID configured');
+      await say('No playlist configured');
+      return;
+    }
+
+    await playlistService.load();
+    final playlist = playlistService.playlists.firstWhere(
+      (p) => p.id == playlistId,
+      orElse: () => throw Exception('Playlist not found'),
+    );
+    if (playlist.items.isEmpty) {
+      await say('${playlist.name} playlist is empty');
+      return;
+    }
+
+    logService.i('PLAYLIST_CMD: playing "${playlist.name}"');
+    await say('Playing playlist ${playlist.name}');
+    await playlistService.playPlaylist(playlist);
+    logService.i('PLAYLIST_CMD: playPlaylist returned');
   }
 }
